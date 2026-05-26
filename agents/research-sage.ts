@@ -70,12 +70,18 @@ function buildPrompt(inputs: ResearchInputs): string {
   if (inputs.jd_url) {
     return `You are ResearchSage, an agent that extracts structured job context from a job posting page.
 
-TASK: Use the web_search tool to fetch ${inputs.jd_url}. Synthesize a structured JobContext JSON.
+TASK:
+1. You MUST call the web_search tool at least once to fetch ${inputs.jd_url}.
+2. Optionally also fetch the company's /careers or /about page on the same domain for context.
+3. From the FETCHED content (not your training data), extract a structured JobContext JSON.
 
-CONSTRAINTS:
-- Only fetch http:// and https:// URLs from the company's own domain (extracted from the JD URL) and the JD URL itself.
-- If a page is paywalled or behind auth, return partial JobContext with degraded: true and use what you can infer from the JD URL alone.
-- pitchsage_suggested_stance: infer the most natural critique stance for this role:
+HARD REQUIREMENTS:
+- Do NOT generate fields from your training knowledge. Every field must come from the fetched page.
+- Set degraded: true ONLY if your web_search attempts returned empty content or the page was blocked (paywall/auth). Do NOT set degraded: true as a shortcut to skip fetching.
+- If the URL fetch succeeds, populate location precisely (e.g., "San Francisco, CA / Remote", "Sydney, Australia"). Never write "Not specified".
+- Only fetch http:// and https:// URLs from the JD's own host or its parent domain.
+
+pitchsage_suggested_stance: infer the most natural critique stance for this role:
   - Engineering / Product / Design → "builder"
   - UX / Research / Product Marketing → "analyst"
   - Customer Success / Support → "customer"
