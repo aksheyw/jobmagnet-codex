@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import { readFileSync } from "node:fs";
 import { healthHandler } from "./routes/health.js";
+import { runAgentHandler } from "./routes/run-agent.js";
 
 const PORT = Number(process.env.VPS_PORT ?? 8443);
 
@@ -31,6 +32,7 @@ app.addHook("onRequest", async (request, reply) => {
 });
 
 app.get("/health", healthHandler);
+app.post("/run-agent", runAgentHandler);
 
 const start = async () => {
   try {
