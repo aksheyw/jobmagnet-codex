@@ -9,7 +9,9 @@ services:
     env_file:
       - /root/.jobmagnet/env
     volumes:
-      - /root/.codex:/root/.codex:ro
+      # Codex needs to write log/, memories/, tmp/ alongside auth.json — must be :rw.
+      # auth.json is not at risk: container runs only our code which never touches it.
+      - /root/.codex:/root/.codex:rw
       - /root/.jobmagnet/secret:/root/.jobmagnet/secret:ro
       - /var/jobmagnet/jobs:/var/jobmagnet/jobs:rw
     healthcheck:
