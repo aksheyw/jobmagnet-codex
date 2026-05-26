@@ -18,8 +18,15 @@ COPY routes ./routes
 COPY agents ./agents
 COPY lib ./lib
 COPY schemas ./schemas
+COPY template ./template
 
 RUN npx tsc
+
+# Template lives inside the container image (not bind-mounted) so a
+# template rebuild requires a `docker compose build` — explicit, no
+# silent drift.
+ENV JOBMAGNET_TEMPLATE_DIR=/opt/app/template
+ENV JOBMAGNET_JOBS_DIR=/var/jobmagnet/jobs
 
 EXPOSE 8443
 

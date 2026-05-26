@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --brand-primary: #6366F1;
+  --brand-secondary: #A5B4FC;
+  --brand-background: #FFFFFF;
+}
+
+body {
+  font-family: theme('fontFamily.body');
+  background-color: var(--brand-background);
+  color: #0F172A;
+}

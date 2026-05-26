@@ -1,0 +1,99 @@
+{
+  "candidate_name": "Akshey Walia",
+  "headline": "Engineering leader who's shipped 6 products to 100K+ users — interested in scaling payments infrastructure at Stripe",
+  "about": "I build products that handle money and trust at scale. Over the past 4 years I've shipped 6 products across fintech, AI, and mobile — from a UPI checkout handling ₹2Cr+ TPV across 6 broker integrations to an AI plant-care app serving 100K+ users. I think like a PM, ship like an engineer, and obsess over the details that make users trust a product with their money. I'm looking for a role where I can own an ambitious problem end-to-end at a company whose infrastructure I've already studied closely.",
+  "why_im_a_fit": [
+    {
+      "metric": "Payments at scale",
+      "bullet": "Shipped UPI checkout flow for Wealth Sage handling ₹2Cr+ TPV across 6 brokers — directly maps to 'scaling payments infrastructure' in the JD."
+    },
+    {
+      "metric": "Multi-product builder",
+      "bullet": "6 products shipped (Plant Sage, Kahaani, Sage-Bot, Wealth Sage). PM mindset, ships full-stack. Maps to 'owns the roadmap end-to-end.'"
+    },
+    {
+      "metric": "Distributed engineering",
+      "bullet": "Led teams across 3 timezones (Hyderabad + SF + London). Stripe India team needs this."
+    }
+  ],
+  "work": [
+    {
+      "company": "Wealth Sage",
+      "title": "Founder & Engineering Lead",
+      "dates": "Jan 2024 – Present",
+      "bullets": [
+        "Built UPI checkout + Zero Touch Command GTT trading. ₹2Cr+ TPV, 6 broker integrations.",
+        "Reduced repeat-checkout drop-off by 4.1% with single-screen UPI intent pattern.",
+        "Shipped n8n-powered automation layer eliminating 6hrs/week of manual reconciliation."
+      ]
+    },
+    {
+      "company": "Plant Sage",
+      "title": "Founder & Product Lead",
+      "dates": "Mar 2023 – Present",
+      "bullets": [
+        "AI plant care for 100K+ users. Built and shipped Android app from 0 to 1.",
+        "Integrated Claude + OpenRouter multi-model routing for diagnosis flows.",
+        "Maintained 4.6-star rating with proactive push notification personalization."
+      ]
+    },
+    {
+      "company": "Kahaani Studio",
+      "title": "Engineering Manager",
+      "dates": "Jul 2022 – Feb 2024",
+      "bullets": [
+        "Led cross-functional team of 8 across design, mobile, and backend.",
+        "Delivered 3 product launches on time; reduced release cycle from 3 weeks to 5 days.",
+        "Introduced structured retrospectives that cut bug escape rate by 40%."
+      ]
+    }
+  ],
+  "pitch_section": {
+    "stance": "builder",
+    "title": "What I'd ship at Stripe",
+    "problem": "I tested Checkout's India flow end-to-end as a returning user with a saved UPI method. On the first screen, Stripe correctly shows the saved VPA — good. But on tap, it routes to a fresh 'enter UPI ID' screen instead of triggering the saved-method intent. This adds 2 taps (re-enter VPA, re-confirm), which our research at Wealth Sage found drops conversion 8–12% on returning checkout.",
+    "hypothesis": "A single-screen 'Use saved · pay ₹X' intent with a 5-second timeout fallback will recover 4–6% of returning-user checkout drop-off without adding auth risk.",
+    "proposed_solution": "Ship a single-screen confirm pattern: detect saved VPA, pre-fill amount, show 'Confirm ▶' as primary CTA with 5s auto-dismiss fallback to manual entry. I shipped exactly this pattern at Wealth Sage in March 2026 and recovered 4.1% on repeat-checkout.",
+    "metrics_to_track": [
+      "Returning-user checkout conversion rate (India)",
+      "UPI intent success rate vs. manual re-entry rate",
+      "Time-to-pay for returning users (p50, p95)",
+      "Fallback trigger rate (how often 5s timeout fires)"
+    ],
+    "tradeoffs": [
+      "Slightly higher implementation complexity for the intent pre-fill layer",
+      "Requires maintaining saved-method sync with NPCI VPA state",
+      "May not generalize to first-time users (scope: returning users only)"
+    ],
+    "guardrails": [
+      "No change to fraud detection or auth flows",
+      "Fallback to manual entry if VPA validation fails",
+      "A/B test on 10% of returning India users before full rollout",
+      "Respect existing payment method expiry / revocation signals"
+    ],
+    "evidence": [
+      {
+        "type": "screenshot",
+        "url": "/evidence/current-behavior.png",
+        "caption": "Current behavior: re-prompt on saved VPA tap"
+      },
+      {
+        "type": "wireframe-svg",
+        "url": "/evidence/proposed-flow.svg",
+        "caption": "Proposed: single-screen confirm pattern"
+      }
+    ]
+  },
+  "brand_style": {
+    "primary": "#635BFF",
+    "secondary": "#9F94FF",
+    "background": "#FFFFFF",
+    "headline_font": "Inter",
+    "body_font": "Inter",
+    "mood": "minimal"
+  },
+  "target_company": {
+    "name": "Stripe",
+    "domain": "stripe.com"
+  }
+}

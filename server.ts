@@ -4,6 +4,8 @@ import { readFileSync } from "node:fs";
 import { timingSafeEqual } from "node:crypto";
 import { healthHandler } from "./routes/health.js";
 import { runAgentHandler } from "./routes/run-agent.js";
+import { downloadHandler } from "./routes/download.js";
+import { orchestrateHandler } from "./routes/orchestrate.js";
 
 const PORT = Number(process.env.VPS_PORT ?? 8443);
 
@@ -30,7 +32,10 @@ const app = Fastify({
 await app.register(rateLimit, { global: false });
 
 app.addHook("onRequest", async (request, reply) => {
+  // Public, unauthenticated routes (auth happens inside the handler if needed).
   if (request.url === "/health" || request.url === "/health/") return;
+  if (request.url.startsWith("/download/")) return; // signed token = auth
+
   const auth = request.headers.authorization;
   if (!auth?.startsWith("Bearer ")) {
     return reply.code(401).send({ ok: false, error: "missing bearer token" });
@@ -49,6 +54,16 @@ app.post(
   "/run-agent",
   { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
   runAgentHandler,
+);
+app.post(
+  "/orchestrate",
+  { config: { rateLimit: { max: 6, timeWindow: "1 minute" } } },
+  orchestrateHandler,
+);
+app.get(
+  "/download/:jobId",
+  { config: { rateLimit: { max: 30, timeWindow: "1 minute" } } },
+  downloadHandler,
 );
 
 const start = async () => {
