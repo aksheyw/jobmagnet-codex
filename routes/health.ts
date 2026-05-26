@@ -2,11 +2,15 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import { execSync } from "node:child_process";
 
 export async function healthHandler(_req: FastifyRequest, reply: FastifyReply) {
-  const codexVersion = safeExec("codex --version 2>&1", "missing");
+  const codexVersion = (() => {
+    const out = safeExec("codex --version 2>&1", "");
+    const match = out.match(/codex-cli\s+\S+/);
+    return match ? match[0] : "missing";
+  })();
   const authStatus = (() => {
     const status = safeExec("codex login status 2>&1", "");
-    if (status.includes("ChatGPT")) return "chatgpt";
-    if (status.includes("API")) return "api_key";
+    if (/Logged in using ChatGPT/.test(status)) return "chatgpt";
+    if (/Logged in using API/.test(status)) return "api_key";
     return "none";
   })();
   const workspaceFreeMb = (() => {
