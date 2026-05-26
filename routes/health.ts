@@ -2,9 +2,9 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import { execSync } from "node:child_process";
 
 export async function healthHandler(_req: FastifyRequest, reply: FastifyReply) {
-  const codexVersion = safeExec("codex --version", "missing");
+  const codexVersion = safeExec("codex --version 2>&1", "missing");
   const authStatus = (() => {
-    const status = safeExec("codex login status", "");
+    const status = safeExec("codex login status 2>&1", "");
     if (status.includes("ChatGPT")) return "chatgpt";
     if (status.includes("API")) return "api_key";
     return "none";
