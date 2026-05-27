@@ -116,5 +116,6 @@ export function sanitizeUntrustedText(input: string): string {
     .replace(/"""+/g, '""')
     .replace(/<\/?JD_TEXT>/gi, "")
     .replace(/<\/?USER_SEED>/gi, "")
-    .replace(/<\/?UNTRUSTED>/gi, "");
+    .replace(/<\/?UNTRUSTED>/gi, "")
+    .replace(/<\/?PROFILE>/gi, "");
 }
