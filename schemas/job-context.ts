@@ -20,7 +20,7 @@ export const JobContextSchema = z.object({
     "director",
     "vp",
   ]),
-  pitchsage_suggested_stance: z.enum(["builder", "analyst", "customer", "strategist"]),
+  pitch_suggested_stance: z.enum(["builder", "analyst", "customer", "strategist"]),
   degraded: z.boolean(),
 });
 
@@ -42,7 +42,7 @@ export const JobContextJsonSchema = {
       type: "string",
       enum: ["junior", "mid", "senior", "staff", "principal", "manager", "director", "vp"],
     },
-    pitchsage_suggested_stance: {
+    pitch_suggested_stance: {
       type: "string",
       enum: ["builder", "analyst", "customer", "strategist"],
     },
@@ -59,7 +59,7 @@ export const JobContextJsonSchema = {
     "team_context",
     "location",
     "career_level",
-    "pitchsage_suggested_stance",
+    "pitch_suggested_stance",
     "degraded",
   ],
   additionalProperties: false,

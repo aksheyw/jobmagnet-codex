@@ -4,7 +4,7 @@ import {
   PitchSectionSchema,
   type PitchSection,
 } from "../schemas/pitch-section.js";
-import { sanitizeUntrustedText } from "./research-sage.js";
+import { sanitizeUntrustedText } from "./research-agent.js";
 
 export type PitchStance = "builder" | "analyst" | "customer" | "strategist";
 
@@ -30,13 +30,13 @@ export interface PitchResult {
 
 const DOMAIN_REGEX = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i;
 
-export async function runPitchSage(
+export async function runPitchAgent(
   codex: Codex,
   inputs: PitchInputs,
   workingDirectory: string,
 ): Promise<PitchResult> {
   if (!DOMAIN_REGEX.test(inputs.company_domain)) {
-    throw new Error(`PitchSage: invalid company_domain ${inputs.company_domain}`);
+    throw new Error(`PitchAgent: invalid company_domain ${inputs.company_domain}`);
   }
 
   const cleanSeed = sanitizeUntrustedText(inputs.seed).slice(0, 400);
@@ -56,7 +56,7 @@ export async function runPitchSage(
   const durationMs = Date.now() - t0;
 
   if (!turn.finalResponse) {
-    throw new Error("PitchSage: empty finalResponse from Codex");
+    throw new Error("PitchAgent: empty finalResponse from Codex");
   }
 
   const parsed = JSON.parse(turn.finalResponse);
@@ -64,7 +64,7 @@ export async function runPitchSage(
 
   if (validated.stance !== inputs.stance) {
     throw new Error(
-      `PitchSage: stance mismatch (asked ${inputs.stance}, got ${validated.stance})`,
+      `PitchAgent: stance mismatch (asked ${inputs.stance}, got ${validated.stance})`,
     );
   }
 
@@ -119,7 +119,7 @@ function buildPrompt(inputs: PitchInputs): string {
   const guide = STANCE_GUIDE[inputs.stance];
   const title = guide.titlePattern.replace("<company>", inputs.company_name);
 
-  return `You are PitchSage. You produce a product/role critique grounded in evidence you fetch from the target company's site.
+  return `You are PitchAgent. You produce a product/role critique grounded in evidence you fetch from the target company's site.
 
 TARGET: ${inputs.company_name} (${inputs.company_domain})
 STANCE: ${inputs.stance}

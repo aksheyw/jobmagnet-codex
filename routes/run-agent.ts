@@ -4,11 +4,11 @@ import { createCodexClient } from "../lib/codex-client.js";
 import { ensureWorkspace } from "../lib/workspace.js";
 import { logUsage } from "../lib/usage-logger.js";
 import { validatePublicUrl } from "../lib/url-validator.js";
-import { runResearchSage } from "../agents/research-sage.js";
-import { runBrandSage } from "../agents/brand-sage.js";
-import { runNarrativeSage } from "../agents/narrative-sage.js";
-import { runPitchSage } from "../agents/pitch-sage.js";
-import { runCodeSage } from "../agents/code-sage.js";
+import { runResearchAgent } from "../agents/research-agent.js";
+import { runBrandAgent } from "../agents/brand-agent.js";
+import { runNarrativeAgent } from "../agents/narrative-agent.js";
+import { runPitchAgent } from "../agents/pitch-agent.js";
+import { runCodeAgent } from "../agents/code-agent.js";
 import { JobContextSchema } from "../schemas/job-context.js";
 import { BrandStyleSchema } from "../schemas/brand-style.js";
 import { NarrativeSchema } from "../schemas/narrative.js";
@@ -142,7 +142,7 @@ async function handleResearch(
     });
   }
   const codex = createCodexClient();
-  const { result, usage, durationMs, webSearchQueries } = await runResearchSage(
+  const { result, usage, durationMs, webSearchQueries } = await runResearchAgent(
     codex,
     parsed.data,
     workdir,
@@ -196,7 +196,7 @@ async function handleBrand(
     });
   }
   const codex = createCodexClient();
-  const { result, usage, durationMs, webSearchQueries } = await runBrandSage(
+  const { result, usage, durationMs, webSearchQueries } = await runBrandAgent(
     codex,
     parsed.data,
     workdir,
@@ -246,7 +246,7 @@ async function handleNarrative(
     });
   }
   const codex = createCodexClient();
-  const { result, usage, durationMs } = await runNarrativeSage(
+  const { result, usage, durationMs } = await runNarrativeAgent(
     codex,
     parsed.data,
     workdir,
@@ -288,7 +288,7 @@ async function handlePitch(
     });
   }
   const codex = createCodexClient();
-  const { result, usage, durationMs, webSearchQueries } = await runPitchSage(
+  const { result, usage, durationMs, webSearchQueries } = await runPitchAgent(
     codex,
     parsed.data,
     workdir,
@@ -329,9 +329,9 @@ async function handleCode(
       details: parsed.error.flatten(),
     });
   }
-  const { result, usage, durationMs } = await runCodeSage(parsed.data, jobId);
+  const { result, usage, durationMs } = await runCodeAgent(parsed.data, jobId);
 
-  // CodeSage is deterministic — log duration only (tokens all 0).
+  // CodeAgent is deterministic — log duration only (tokens all 0).
   await logUsage({
     jobId,
     agent: "code",

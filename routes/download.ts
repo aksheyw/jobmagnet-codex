@@ -20,7 +20,7 @@ const QuerySchema = z.object({
  * GET /download/:jobId?exp=<unix>&sig=<hex32>
  *
  * Public endpoint (NO bearer auth) — token is the auth. HMAC-signed by
- * lib/download-link.ts at CodeSage finish time. Streams the .zip with a
+ * lib/download-link.ts at CodeAgent finish time. Streams the .zip with a
  * Content-Disposition that gives the user a sensible filename.
  */
 export async function downloadHandler(req: FastifyRequest, reply: FastifyReply) {

@@ -41,7 +41,7 @@ export interface CodeResult {
   durationMs: number;
 }
 
-export async function runCodeSage(
+export async function runCodeAgent(
   inputs: CodeInputs,
   jobId: string,
 ): Promise<CodeResult> {
@@ -53,7 +53,7 @@ export async function runCodeSage(
   if (inputs.pitch_section) PitchSectionSchema.parse(inputs.pitch_section);
 
   if (!VPS_BASE_URL) {
-    throw new Error("CodeSage: PUBLIC_VPS_BASE_URL env var must be set");
+    throw new Error("CodeAgent: PUBLIC_VPS_BASE_URL env var must be set");
   }
 
   // 2) Resolve fonts (allowlist; falls back to Inter)
@@ -75,7 +75,7 @@ export async function runCodeSage(
 
   if (tailwindOut === tailwindSrc) {
     throw new Error(
-      "CodeSage: tailwind.config.ts color substitution missed — template may have drifted",
+      "CodeAgent: tailwind.config.ts color substitution missed — template may have drifted",
     );
   }
   await writeFile(tailwindPath, tailwindOut, "utf-8");
@@ -91,7 +91,7 @@ export async function runCodeSage(
   });
   await writeFile(layoutPath, layoutOut, "utf-8");
 
-  // 6) Write portfolio-content.json (CodeSage's main contribution)
+  // 6) Write portfolio-content.json (CodeAgent's main contribution)
   const portfolioContent = buildPortfolioContent(inputs);
   const contentPath = join(outputDir, "portfolio-content.json");
   await writeFile(contentPath, JSON.stringify(portfolioContent, null, 2), "utf-8");

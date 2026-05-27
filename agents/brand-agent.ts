@@ -24,13 +24,13 @@ export interface BrandResult {
 
 const DOMAIN_REGEX = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i;
 
-export async function runBrandSage(
+export async function runBrandAgent(
   codex: Codex,
   inputs: BrandInputs,
   workingDirectory: string,
 ): Promise<BrandResult> {
   if (!DOMAIN_REGEX.test(inputs.company_domain)) {
-    throw new Error(`BrandSage: invalid company_domain ${inputs.company_domain}`);
+    throw new Error(`BrandAgent: invalid company_domain ${inputs.company_domain}`);
   }
 
   const t0 = Date.now();
@@ -48,7 +48,7 @@ export async function runBrandSage(
   const durationMs = Date.now() - t0;
 
   if (!turn.finalResponse) {
-    throw new Error("BrandSage: empty finalResponse from Codex");
+    throw new Error("BrandAgent: empty finalResponse from Codex");
   }
 
   const parsed = JSON.parse(turn.finalResponse);
@@ -56,7 +56,7 @@ export async function runBrandSage(
 
   if (validated.source !== "codex-fallback") {
     throw new Error(
-      `BrandSage: expected source=codex-fallback, got ${validated.source}`,
+      `BrandAgent: expected source=codex-fallback, got ${validated.source}`,
     );
   }
 
@@ -79,7 +79,7 @@ function buildPrompt(inputs: BrandInputs): string {
     ? `${inputs.company_name} (${inputs.company_domain})`
     : inputs.company_domain;
 
-  return `You are BrandSage, an agent that extracts a company's visual brand identity from its homepage.
+  return `You are BrandAgent, an agent that extracts a company's visual brand identity from its homepage.
 
 TASK:
 1. You MUST call web_search at least once to fetch https://${inputs.company_domain} (the company's homepage).

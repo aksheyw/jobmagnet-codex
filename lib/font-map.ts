@@ -1,10 +1,10 @@
 /**
  * Allowlist of fonts mappable to `next/font/google` imports. Keys are
  * display names (case-insensitive, whitespace-tolerant) returned by
- * BrandSage / Brandfetch; values are the exact `next/font/google` export
+ * BrandAgent / Brandfetch; values are the exact `next/font/google` export
  * symbol names.
  *
- * If a font is not in this map, CodeSage falls back to `Inter` to keep
+ * If a font is not in this map, CodeAgent falls back to `Inter` to keep
  * the template buildable. The allowlist is intentionally short for MVP;
  * Day 4 polish can extend coverage.
  */

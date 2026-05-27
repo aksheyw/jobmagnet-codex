@@ -13,7 +13,7 @@ const BodySchema = z
     jd_paste_text: z.string().min(40).optional(),
     parsed_profile: z.record(z.unknown()),
     email: z.string().email().optional(),
-    pitchsage: z
+    pitch: z
       .object({
         enabled: z.boolean(),
         stance: z.enum(["builder", "analyst", "customer", "strategist"]),
@@ -50,7 +50,7 @@ export async function orchestrateHandler(
     return;
   }
 
-  // SSRF guard: ResearchSage's web_search will follow jd_url.
+  // SSRF guard: ResearchAgent's web_search will follow jd_url.
   if (parsed.data.jd_url) {
     const v = validatePublicUrl(parsed.data.jd_url);
     if (!v.ok) {

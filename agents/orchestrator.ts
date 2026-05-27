@@ -4,11 +4,11 @@ import { ensureWorkspace } from "../lib/workspace.js";
 import { logUsage } from "../lib/usage-logger.js";
 import { getSupabaseAdmin } from "../lib/supabase-admin.js";
 import { fetchBrandfetch, BRAND_FALLBACK } from "../lib/brandfetch.js";
-import { runResearchSage, type ResearchInputs } from "./research-sage.js";
-import { runBrandSage } from "./brand-sage.js";
-import { runNarrativeSage } from "./narrative-sage.js";
-import { runPitchSage } from "./pitch-sage.js";
-import { runCodeSage } from "./code-sage.js";
+import { runResearchAgent, type ResearchInputs } from "./research-agent.js";
+import { runBrandAgent } from "./brand-agent.js";
+import { runNarrativeAgent } from "./narrative-agent.js";
+import { runPitchAgent } from "./pitch-agent.js";
+import { runCodeAgent } from "./code-agent.js";
 import type { BrandStyle } from "../schemas/brand-style.js";
 import type { Narrative } from "../schemas/narrative.js";
 import type { PitchSection } from "../schemas/pitch-section.js";
@@ -22,7 +22,7 @@ export interface OrchestrateInputs {
   jd_paste_text?: string;
   parsed_profile: Record<string, unknown>;
   email?: string;
-  pitchsage?: {
+  pitch?: {
     enabled: boolean;
     stance: "builder" | "analyst" | "customer" | "strategist";
     seed: string;
@@ -37,8 +37,8 @@ export interface OrchestrateOutcome {
 }
 
 /**
- * End-to-end generation pipeline. Runs ResearchSage → (Brand || Narrative || Pitch)
- * in parallel → CodeSage. Writes `agent_states` to `generation_jobs` after each step
+ * End-to-end generation pipeline. Runs ResearchAgent → (Brand || Narrative || Pitch)
+ * in parallel → CodeAgent. Writes `agent_states` to `generation_jobs` after each step
  * and inserts the final `generations` row on success.
  *
  * Intended to be called fire-and-forget from `/orchestrate` route — caller responds
@@ -89,14 +89,14 @@ export async function orchestrate(
   };
 
   try {
-    // ───────────────────────── Step 1: ResearchSage ─────────────────────────
+    // ───────────────────────── Step 1: ResearchAgent ─────────────────────────
     await markState("research", "running");
     const researchInputs: ResearchInputs = inputs.jd_url
       ? { jd_url: inputs.jd_url }
       : { jd_paste_text: inputs.jd_paste_text };
 
     const researchT0 = Date.now();
-    const research = await runResearchSage(codex, researchInputs, workdir);
+    const research = await runResearchAgent(codex, researchInputs, workdir);
     await logUsage({
       jobId: inputs.job_id,
       agent: "research",
@@ -122,18 +122,18 @@ export async function orchestrate(
     const targetCompany = { name: companyName, domain: companyDomain };
 
     // ─────────────────── Step 2: Brand + Narrative + Pitch (parallel) ───────────────────
-    const pitchEnabled = inputs.pitchsage?.enabled === true;
+    const pitchEnabled = inputs.pitch?.enabled === true;
     const [brandResult, narrativeResult, pitchResult] = await Promise.all([
       runBrandFlow(codex, inputs.job_id, companyDomain, companyName, workdir, markState),
       runNarrativeFlow(codex, inputs.job_id, jobContext, inputs.parsed_profile, targetCompany, workdir, markState),
       pitchEnabled
-        ? runPitchFlow(codex, inputs.job_id, companyDomain, companyName, inputs.pitchsage!, jobContext.jd_summary, workdir, markState)
+        ? runPitchFlow(codex, inputs.job_id, companyDomain, companyName, inputs.pitch!, jobContext.jd_summary, workdir, markState)
         : Promise.resolve<PitchSection | null>(null),
     ]);
 
-    // ───────────────────────── Step 3: CodeSage ─────────────────────────
+    // ───────────────────────── Step 3: CodeAgent ─────────────────────────
     await markState("code", "running");
-    const code = await runCodeSage(
+    const code = await runCodeAgent(
       {
         brand_style: brandResult,
         narrative: narrativeResult,
@@ -232,9 +232,9 @@ async function runBrandFlow(
     /* fall through to Codex */
   }
 
-  // Fallback: Codex BrandSage
+  // Fallback: Codex BrandAgent
   try {
-    const brand = await runBrandSage(codex, { company_domain: domain, company_name: name }, workdir);
+    const brand = await runBrandAgent(codex, { company_domain: domain, company_name: name }, workdir);
     await logUsage({
       jobId,
       agent: "brand",
@@ -259,7 +259,7 @@ async function runBrandFlow(
 async function runNarrativeFlow(
   codex: ReturnType<typeof createCodexClient>,
   jobId: string,
-  jobContext: Awaited<ReturnType<typeof runResearchSage>>["result"],
+  jobContext: Awaited<ReturnType<typeof runResearchAgent>>["result"],
   profile: Record<string, unknown>,
   targetCompany: { name: string; domain: string },
   workdir: string,
@@ -270,7 +270,7 @@ async function runNarrativeFlow(
   ) => Promise<void>,
 ): Promise<Narrative> {
   await markState("narrative", "running");
-  const narrative = await runNarrativeSage(
+  const narrative = await runNarrativeAgent(
     codex,
     { job_context: jobContext, profile, target_company: targetCompany },
     workdir,
@@ -293,7 +293,7 @@ async function runPitchFlow(
   jobId: string,
   domain: string,
   companyName: string,
-  pitchsage: NonNullable<OrchestrateInputs["pitchsage"]>,
+  pitchInputs: NonNullable<OrchestrateInputs["pitch"]>,
   jdSummary: string,
   workdir: string,
   markState: (
@@ -303,13 +303,13 @@ async function runPitchFlow(
   ) => Promise<void>,
 ): Promise<PitchSection> {
   await markState("pitch", "running");
-  const pitch = await runPitchSage(
+  const pitch = await runPitchAgent(
     codex,
     {
       company_domain: domain,
       company_name: companyName,
-      stance: pitchsage.stance,
-      seed: pitchsage.seed,
+      stance: pitchInputs.stance,
+      seed: pitchInputs.seed,
       job_context_summary: jdSummary,
     },
     workdir,
