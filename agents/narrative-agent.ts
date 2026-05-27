@@ -20,6 +20,7 @@ export interface ParsedProfile {
   }>;
   skills?: string[];
   contact?: string;
+  email?: string;
   raw_text?: string;
 }
 
@@ -112,6 +113,8 @@ TASK: Produce a Narrative JSON object that maps the candidate's real experience 
 
 1. **candidate_name** — Use profile.name if present and non-empty. Otherwise EXTRACT from profile.raw_text by scanning for: (a) "I am [Name]" or "I'm [Name]" phrasing, (b) "Hi, I'm [Name]" / "My name is [Name]", (c) the first proper-noun pair (e.g., "Akshey Walia") that appears at the start of the text or after a heading like "About", (d) signature lines like "— Name" or "Sincerely, Name". Use the extracted name even if you have low confidence in it — anything found in the profile is better than the literal string "Candidate". Only fall back to "Candidate" if profile.raw_text contains NO recognizable proper-noun name at all.
 2. **candidate_contact** — Use profile.contact verbatim if present and non-empty (it's a LinkedIn URL or email the user supplied directly). Otherwise EXTRACT from profile.raw_text by scanning for: (a) a LinkedIn URL like "linkedin.com/in/<slug>", (b) an email address like "name@domain.tld". Use the first valid match. If neither is found, return an empty string "".
+
+   **candidate_email** — Separately, use profile.email verbatim if present and non-empty (this is the user's email, supplied via the wizard email field). Otherwise leave empty string "". Do NOT extract from raw_text for this field — it must be the explicit, supplied email so the Hero CTA reaches the right inbox.
 3. **headline** — ONE sentence. Must reference ${inputs.target_company.name} by name. Tone: confident, not bro-y. Format like "Engineering leader who shipped 6 products to 100K+ users — interested in <specific JD theme> at ${inputs.target_company.name}".
 4. **why_im_a_fit** — EXACTLY 3 bullets. Each has:
    - bullet: 1-2 sentences mapping a real candidate accomplishment to a specific responsibility/must-have from the JD.

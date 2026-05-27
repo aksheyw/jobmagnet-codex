@@ -15,6 +15,7 @@ const ResumeRoleSchema = z.object({
 export const NarrativeSchema = z.object({
   candidate_name: z.string().min(1),
   candidate_contact: z.string(),
+  candidate_email: z.string(),
   headline: z.string().min(1),
   why_im_a_fit: z.array(WhyImAFitItemSchema).length(3),
   about: z.string().min(1),
@@ -31,6 +32,7 @@ export const NarrativeJsonSchema = {
   properties: {
     candidate_name: { type: "string" },
     candidate_contact: { type: "string" },
+    candidate_email: { type: "string" },
     headline: { type: "string" },
     why_im_a_fit: {
       type: "array",
@@ -64,6 +66,7 @@ export const NarrativeJsonSchema = {
   required: [
     "candidate_name",
     "candidate_contact",
+    "candidate_email",
     "headline",
     "why_im_a_fit",
     "about",

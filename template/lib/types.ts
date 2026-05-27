@@ -45,6 +45,7 @@ export interface TargetCompany {
 export interface PortfolioContent {
   readonly candidate_name: string;
   readonly candidate_contact?: string;
+  readonly candidate_email?: string;
   readonly headline: string;
   readonly about: string;
   readonly why_im_a_fit: WhyFitItem[];

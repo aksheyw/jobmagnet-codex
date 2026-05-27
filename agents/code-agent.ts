@@ -200,6 +200,7 @@ function buildPortfolioContent(inputs: CodeInputs) {
   return {
     candidate_name: inputs.narrative.candidate_name,
     candidate_contact: inputs.narrative.candidate_contact,
+    candidate_email: inputs.narrative.candidate_email,
     headline: inputs.narrative.headline,
     about: inputs.narrative.about,
     why_im_a_fit: inputs.narrative.why_im_a_fit,

@@ -127,6 +127,7 @@ export async function orchestrate(
     // (invalid domain / empty Codex response / stance mismatch) downgrades
     // to "no pitch this generation" instead of taking down brand + narrative
     // that may have already succeeded.
+    const pitchT0 = Date.now();
     const pitchPromise: Promise<PitchSection | null> = pitchEnabled
       ? runPitchFlow(codex, inputs.job_id, companyDomain, companyName, inputs.pitch!, jobContext.jd_summary, workdir, markState)
           .catch(async (err) => {
@@ -135,7 +136,28 @@ export async function orchestrate(
               { job_id: inputs.job_id, err: msg },
               "pitch flow failed; continuing without pitch",
             );
-            await markState("pitch", "failed", { reason: msg.slice(0, 200) });
+            // F70: log a codex_usage row even on failure so the trail-of-work
+            // sidebar accurately reflects "pitch was attempted, took N ms, returned 0 tokens".
+            try {
+              await logUsage({
+                jobId: inputs.job_id,
+                agent: "pitch",
+                tokensInput: 0,
+                tokensOutput: 0,
+                tokensCachedInput: 0,
+                tokensReasoningOutput: 0,
+                durationMs: Date.now() - pitchT0,
+              });
+            } catch {
+              /* F68: swallow telemetry errors so they don't cascade-fail Promise.all */
+            }
+            // F68: wrap markState in try/swallow — a Supabase outage here must NOT
+            // take down brand + narrative that already succeeded.
+            try {
+              await markState("pitch", "failed", { reason: msg.slice(0, 200) });
+            } catch {
+              /* swallow */
+            }
             return null;
           })
       : Promise.resolve<PitchSection | null>(null);
@@ -200,6 +222,34 @@ export async function orchestrate(
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
     log.error({ job_id: inputs.job_id, err: errMsg }, "orchestrate failed");
+
+    // F75: any agents still in "running" state when this throw happened would
+    // otherwise spin forever in the UI. Mark each in-flight agent as "failed"
+    // so progress page renders the actual final state.
+    try {
+      const { data: row } = await supabase
+        .from("generation_jobs")
+        .select("agent_states")
+        .eq("id", inputs.job_id)
+        .maybeSingle();
+      const states = (row?.agent_states ?? {}) as Record<
+        string,
+        { state?: string }
+      >;
+      for (const [agent, info] of Object.entries(states)) {
+        if (info?.state === "running") {
+          try {
+            await markState(agent as AgentName, "failed", {
+              reason: "orchestrator threw",
+            });
+          } catch {
+            /* swallow per-agent markState errors */
+          }
+        }
+      }
+    } catch {
+      /* swallow read failure — best-effort cleanup */
+    }
 
     try {
       await supabase
@@ -275,7 +325,24 @@ async function runBrandFlow(
     await markState("brand", "done", { source: "codex-fallback" });
     return brand.result;
   } catch (err) {
-    // Last-ditch: static fallback so the pipeline still completes
+    // Last-ditch: static fallback so the pipeline still completes.
+    // F66: log a codex_usage row even on the static-fallback path so the trail-of-work
+    // sidebar consistently shows 5/5 agents ran (Brandfetch succeeded → logged; Codex
+    // BrandAgent succeeded → logged; static fallback → logged here). 0 tokens because
+    // no Codex call was made.
+    try {
+      await logUsage({
+        jobId,
+        agent: "brand",
+        tokensInput: 0,
+        tokensOutput: 0,
+        tokensCachedInput: 0,
+        tokensReasoningOutput: 0,
+        durationMs: Date.now() - brandT0,
+      });
+    } catch {
+      /* swallow telemetry error — must not break the pipeline */
+    }
     await markState("brand", "done", {
       source: "static-fallback",
       reason: err instanceof Error ? err.message.slice(0, 200) : "unknown",
