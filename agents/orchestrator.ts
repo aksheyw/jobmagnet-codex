@@ -123,12 +123,27 @@ export async function orchestrate(
 
     // ─────────────────── Step 2: Brand + Narrative + Pitch (parallel) ───────────────────
     const pitchEnabled = inputs.pitch?.enabled === true;
+    // Pitch is wrapped in its own catch so any throw inside runPitchFlow
+    // (invalid domain / empty Codex response / stance mismatch) downgrades
+    // to "no pitch this generation" instead of taking down brand + narrative
+    // that may have already succeeded.
+    const pitchPromise: Promise<PitchSection | null> = pitchEnabled
+      ? runPitchFlow(codex, inputs.job_id, companyDomain, companyName, inputs.pitch!, jobContext.jd_summary, workdir, markState)
+          .catch(async (err) => {
+            const msg = err instanceof Error ? err.message : String(err);
+            log.warn(
+              { job_id: inputs.job_id, err: msg },
+              "pitch flow failed; continuing without pitch",
+            );
+            await markState("pitch", "failed", { reason: msg.slice(0, 200) });
+            return null;
+          })
+      : Promise.resolve<PitchSection | null>(null);
+
     const [brandResult, narrativeResult, pitchResult] = await Promise.all([
       runBrandFlow(codex, inputs.job_id, companyDomain, companyName, workdir, markState),
       runNarrativeFlow(codex, inputs.job_id, jobContext, inputs.parsed_profile, targetCompany, workdir, markState),
-      pitchEnabled
-        ? runPitchFlow(codex, inputs.job_id, companyDomain, companyName, inputs.pitch!, jobContext.jd_summary, workdir, markState)
-        : Promise.resolve<PitchSection | null>(null),
+      pitchPromise,
     ]);
 
     // ───────────────────────── Step 3: CodeAgent ─────────────────────────
@@ -162,7 +177,7 @@ export async function orchestrate(
       job_id: inputs.job_id,
       short_id: inputs.short_id,
       anonymous_email: inputs.email ?? null,
-      pitch_reviewed: !pitchEnabled, // no pitch → no review needed
+      pitch_reviewed: !pitchEnabled || pitchResult === null, // no pitch / failed pitch → no review needed
       job_context: jobContext,
       brand_style: brandResult,
       narrative: narrativeResult,
@@ -222,9 +237,22 @@ async function runBrandFlow(
 ): Promise<BrandStyle> {
   await markState("brand", "running");
   // Primary: Brandfetch (fast, no LLM tokens). Falls through on miss.
+  const brandT0 = Date.now();
   try {
     const primary = await fetchBrandfetch(domain);
     if (primary) {
+      // Log a codex_usage row even on the Brandfetch fast-path so the Trail of
+      // work sidebar shows 5/5 agents ran (rather than 4/5). Tokens are all 0
+      // because Brandfetch is a cached HTTP fetch, not a Codex call.
+      await logUsage({
+        jobId,
+        agent: "brand",
+        tokensInput: 0,
+        tokensOutput: 0,
+        tokensCachedInput: 0,
+        tokensReasoningOutput: 0,
+        durationMs: Date.now() - brandT0,
+      });
       await markState("brand", "done", { source: "brandfetch" });
       return primary;
     }
