@@ -19,6 +19,8 @@ export interface ParsedProfile {
     bullets?: string[];
   }>;
   skills?: string[];
+  contact?: string;
+  raw_text?: string;
 }
 
 export interface NarrativeInputs {
@@ -108,19 +110,20 @@ TARGET ROLE:
 
 TASK: Produce a Narrative JSON object that maps the candidate's real experience to this exact role. Hard rules:
 
-1. **candidate_name** — full name from profile. If profile is missing a name, use "Candidate".
-2. **headline** — ONE sentence. Must reference ${inputs.target_company.name} by name. Tone: confident, not bro-y. Format like "Engineering leader who shipped 6 products to 100K+ users — interested in <specific JD theme> at ${inputs.target_company.name}".
-3. **why_im_a_fit** — EXACTLY 3 bullets. Each has:
+1. **candidate_name** — Use profile.name if present and non-empty. Otherwise EXTRACT from profile.raw_text by scanning for: (a) "I am [Name]" or "I'm [Name]" phrasing, (b) "Hi, I'm [Name]" / "My name is [Name]", (c) the first proper-noun pair (e.g., "Akshey Walia") that appears at the start of the text or after a heading like "About", (d) signature lines like "— Name" or "Sincerely, Name". Use the extracted name even if you have low confidence in it — anything found in the profile is better than the literal string "Candidate". Only fall back to "Candidate" if profile.raw_text contains NO recognizable proper-noun name at all.
+2. **candidate_contact** — Use profile.contact verbatim if present and non-empty (it's a LinkedIn URL or email the user supplied directly). Otherwise EXTRACT from profile.raw_text by scanning for: (a) a LinkedIn URL like "linkedin.com/in/<slug>", (b) an email address like "name@domain.tld". Use the first valid match. If neither is found, return an empty string "".
+3. **headline** — ONE sentence. Must reference ${inputs.target_company.name} by name. Tone: confident, not bro-y. Format like "Engineering leader who shipped 6 products to 100K+ users — interested in <specific JD theme> at ${inputs.target_company.name}".
+4. **why_im_a_fit** — EXACTLY 3 bullets. Each has:
    - bullet: 1-2 sentences mapping a real candidate accomplishment to a specific responsibility/must-have from the JD.
    - metric: a SHORT label/number (e.g., "₹2Cr+ TPV", "100K+ users", "6 products", "+24% rev", "p50 < 80ms"). Use real numbers from the profile. NEVER fabricate metrics. If no concrete number available, use a short descriptor like "Multi-product builder" or "Platform owner".
-4. **about** — ~80 words in the candidate's voice. Mention ${inputs.target_company.name} once. No buzzwords without proof.
-5. **cover_letter** — ~250 words. The FIRST SENTENCE must mention ${inputs.target_company.name} and a specific reason to want this role. Body: 2-3 paragraphs mapping experience to JD. Close with: "I'd love to dig in deeper — happy to set up a call." Sign with the candidate's first name only.
-6. **resume_bullets** — reorder + rewrite candidate's work_history per JD relevance. Top role = most relevant to JD. Each role has 3-5 bullets, each bullet ≤ 25 words, leading with a verb + specific number wherever the profile supports it. If the profile bullets are vague, tighten them but DON'T invent numbers.
+5. **about** — ~80 words in the candidate's voice. Mention ${inputs.target_company.name} once. No buzzwords without proof.
+6. **cover_letter** — ~250 words. The FIRST SENTENCE must mention ${inputs.target_company.name} and a specific reason to want this role. Body: 2-3 paragraphs mapping experience to JD. Close with: "I'd love to dig in deeper — happy to set up a call." Sign with the candidate's first name only.
+7. **resume_bullets** — reorder + rewrite candidate's work_history per JD relevance. Top role = most relevant to JD. Each role has 3-5 bullets, each bullet ≤ 25 words, leading with a verb + specific number wherever the profile supports it. If the profile bullets are vague, tighten them but DON'T invent numbers.
 
 CONSTRAINTS:
 - NEVER fabricate a credential, company, number, or date. If the profile doesn't have it, leave it out.
 - NEVER use vague buzzwords without a number ("scalable", "synergistic", "best-in-class").
-- If profile.work_history is empty/null, return resume_bullets = [{ company: "—", title: "—", dates: "—", bullets: ["Profile data was insufficient to populate resume."] }].
+- If profile.work_history is empty/null, EXTRACT work entries from profile.raw_text by scanning for patterns like "Company · Title · Dates", "Title at Company (Dates)", or section headers like "Work Experience" / "Experience" / "Work History" followed by entries. For each match extract: company, title, dates (or "Present" if current), and 1-5 bullets describing what was done. Only return the placeholder row [{ company: "—", title: "—", dates: "—", bullets: ["Profile data was insufficient to populate resume."] }] if profile.raw_text contains NO recognizable work-experience section at all.
 
 OUTPUT: JSON matching the provided schema. All fields required.`;
 }
