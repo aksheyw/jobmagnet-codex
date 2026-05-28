@@ -67,7 +67,10 @@ export function normalizeDomain(raw: string): string {
     .toLowerCase()
     .replace(/^https?:\/\//, "")
     .replace(/\/.*$/, "")
-    .replace(/^www\./, "");
+    .replace(/^www\./, "")
+    // Strip a leading job-board subdomain (jobs./careers./apply./boards.) only
+    // when ≥2 labels remain, so we never collapse a real registrable domain.
+    .replace(/^(?:jobs|careers|career|apply|boards|hire)\.(?=[^.]+\.[^.]+)/, "");
 }
 
 export async function runResearchAgent(
