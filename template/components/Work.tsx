@@ -3,15 +3,16 @@ import type { PortfolioContent } from "@/lib/types";
 interface WorkProps {
   readonly entries: PortfolioContent["work"];
   readonly brandPrimary: string;
+  readonly brandInk: string;
 }
 
-export function Work({ entries, brandPrimary }: WorkProps) {
+export function Work({ entries, brandPrimary, brandInk }: WorkProps) {
   return (
     <section className="bg-white px-6 py-14">
       <div className="mx-auto max-w-4xl">
         <p
           className="mb-2 text-xs font-semibold uppercase tracking-widest"
-          style={{ color: brandPrimary }}
+          style={{ color: brandInk }}
         >
           Selected work
         </p>

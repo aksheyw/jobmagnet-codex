@@ -1,4 +1,5 @@
 import type { PortfolioContent } from "@/lib/types";
+import { deriveBrandRoles } from "@/lib/brand-contrast";
 import { Hero } from "./Hero";
 import { WhyImAFit } from "./WhyImAFit";
 import { About } from "./About";
@@ -12,6 +13,7 @@ interface PortfolioRenderProps {
 
 export function PortfolioRender({ content }: PortfolioRenderProps) {
   const { brand_style, target_company, candidate_name } = content;
+  const brand = deriveBrandRoles(brand_style);
 
   const cssVars = {
     "--brand-primary": brand_style.primary,
@@ -34,11 +36,13 @@ export function PortfolioRender({ content }: PortfolioRenderProps) {
           target_company,
           brand_style,
         }}
+        brand={brand}
       />
 
       <WhyImAFit
         items={content.why_im_a_fit}
         brandPrimary={brand_style.primary}
+        brandInk={brand.ink}
       />
 
       {content.pitch_section && (
@@ -46,10 +50,15 @@ export function PortfolioRender({ content }: PortfolioRenderProps) {
           pitch={content.pitch_section}
           companyName={target_company.name}
           brandPrimary={brand_style.primary}
+          brandInk={brand.ink}
         />
       )}
 
-      <Work entries={content.work} brandPrimary={brand_style.primary} />
+      <Work
+        entries={content.work}
+        brandPrimary={brand_style.primary}
+        brandInk={brand.ink}
+      />
 
       <About text={content.about} />
 

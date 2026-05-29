@@ -4,6 +4,7 @@ interface PitchSectionProps {
   readonly pitch: PitchSectionType;
   readonly companyName: string;
   readonly brandPrimary: string;
+  readonly brandInk: string;
 }
 
 const STANCE_TITLES: Record<PitchSectionType["stance"], (company: string) => string> = {
@@ -13,7 +14,7 @@ const STANCE_TITLES: Record<PitchSectionType["stance"], (company: string) => str
   strategist: (c) => `Where ${c} should go next`,
 };
 
-export function PitchSection({ pitch, companyName, brandPrimary }: PitchSectionProps) {
+export function PitchSection({ pitch, companyName, brandPrimary, brandInk }: PitchSectionProps) {
   const sectionTitle = STANCE_TITLES[pitch.stance](companyName);
 
   return (
@@ -26,7 +27,7 @@ export function PitchSection({ pitch, companyName, brandPrimary }: PitchSectionP
       <div className="mx-auto max-w-4xl">
         <p
           className="mb-2 text-xs font-semibold uppercase tracking-widest"
-          style={{ color: brandPrimary }}
+          style={{ color: brandInk }}
         >
           A pitch &middot; {pitch.stance} stance
         </p>
@@ -79,7 +80,7 @@ export function PitchSection({ pitch, companyName, brandPrimary }: PitchSectionP
                   className="rounded-full px-3 py-1 text-xs font-medium"
                   style={{
                     backgroundColor: `color-mix(in srgb, ${brandPrimary} 10%, white)`,
-                    color: brandPrimary,
+                    color: brandInk,
                     border: `1px solid color-mix(in srgb, ${brandPrimary} 25%, white)`,
                   }}
                 >

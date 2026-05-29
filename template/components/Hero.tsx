@@ -1,10 +1,12 @@
 import type { PortfolioContent } from "@/lib/types";
+import type { BrandRoles } from "@/lib/brand-contrast";
 
 interface HeroProps {
   readonly content: Pick<PortfolioContent, "candidate_name" | "headline" | "target_company" | "brand_style">;
+  readonly brand: BrandRoles;
 }
 
-export function Hero({ content }: HeroProps) {
+export function Hero({ content, brand }: HeroProps) {
   const { candidate_name, headline, target_company, brand_style } = content;
 
   const initials = candidate_name
@@ -26,7 +28,9 @@ export function Hero({ content }: HeroProps) {
       <div
         className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full text-2xl font-bold text-white"
         style={{
-          background: `linear-gradient(135deg, ${brand_style.primary}, ${brand_style.secondary})`,
+          // ink (not raw primary): keeps the white initials legible even when
+          // the brand primary is pale (e.g. Sarvam #C1CCF5).
+          background: `linear-gradient(135deg, ${brand.ink}, ${brand_style.secondary})`,
         }}
         aria-hidden="true"
       >
@@ -46,7 +50,7 @@ export function Hero({ content }: HeroProps) {
           `<mark>${target_company.name}</mark>`
         ).split(/<mark>|<\/mark>/).map((part, i) =>
           i % 2 === 1 ? (
-            <strong key={i} style={{ color: brand_style.primary }}>
+            <strong key={i} style={{ color: brand.ink }}>
               {part}
             </strong>
           ) : (
@@ -59,7 +63,7 @@ export function Hero({ content }: HeroProps) {
         <a
           href={mailtoHref}
           className="inline-flex items-center rounded-md px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
-          style={{ backgroundColor: brand_style.primary }}
+          style={{ backgroundColor: brand.ink }}
         >
           Schedule a call &rarr;
         </a>

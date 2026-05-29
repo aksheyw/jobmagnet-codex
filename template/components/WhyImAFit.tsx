@@ -3,15 +3,16 @@ import type { PortfolioContent } from "@/lib/types";
 interface WhyImAFitProps {
   readonly items: PortfolioContent["why_im_a_fit"];
   readonly brandPrimary: string;
+  readonly brandInk: string;
 }
 
-export function WhyImAFit({ items, brandPrimary }: WhyImAFitProps) {
+export function WhyImAFit({ items, brandPrimary, brandInk }: WhyImAFitProps) {
   return (
     <section className="bg-white px-6 py-14">
       <div className="mx-auto max-w-4xl">
         <p
           className="mb-2 text-xs font-semibold uppercase tracking-widest"
-          style={{ color: brandPrimary }}
+          style={{ color: brandInk }}
         >
           Why I&apos;m a fit
         </p>
