@@ -35,6 +35,12 @@ export interface BrandStyle {
   readonly headline_font: string;
   readonly body_font: string;
   readonly mood: "minimal" | "editorial" | "systematic" | "tech-dark" | "warm-creative";
+  // Optional in the template (blocker #2). The codex pipeline DOES write
+  // `source` into portfolio-content.json (code-agent buildPortfolioContent), and
+  // the shared brand-theme twin reads it; keeping the field optional lets the
+  // theme file stay byte-identical across app + template and tolerates older
+  // fixtures that predate the source-write.
+  readonly source?: "brandfetch" | "codex-fallback";
 }
 
 export interface TargetCompany {

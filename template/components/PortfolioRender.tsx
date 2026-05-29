@@ -1,5 +1,6 @@
 import type { PortfolioContent } from "@/lib/types";
-import { deriveBrandRoles } from "@/lib/brand-contrast";
+import { deriveTheme } from "@/lib/brand-theme";
+import { googleFontLinks } from "@/lib/font-map";
 import { Hero } from "./Hero";
 import { WhyImAFit } from "./WhyImAFit";
 import { About } from "./About";
@@ -13,63 +14,66 @@ interface PortfolioRenderProps {
 
 export function PortfolioRender({ content }: PortfolioRenderProps) {
   const { brand_style, target_company, candidate_name } = content;
-  const brand = deriveBrandRoles(brand_style);
 
-  const cssVars = {
-    "--brand-primary": brand_style.primary,
-    "--brand-secondary": brand_style.secondary,
-    "--brand-background": brand_style.background,
-  } as React.CSSProperties;
+  // brand_style is already validated by the codex pipeline before it reaches
+  // the static template, so derive the theme directly (no Zod guard needed).
+  const theme = deriveTheme(brand_style);
+  // Load the brand's actual typeface at render time (allowlisted Google fonts);
+  // proprietary faces degrade to the fontStack's generic fallback.
+  const fontLinks = googleFontLinks([brand_style.headline_font, brand_style.body_font]);
 
   return (
     <div
       style={{
-        ...cssVars,
-        backgroundColor: brand_style.background,
+        backgroundColor: theme.bg,
+        color: theme.fg,
+        fontFamily: theme.bodyFamily,
         minHeight: "100vh",
+        // Keep dark-mood surfaces when printing / saving to PDF.
+        printColorAdjust: "exact",
+        WebkitPrintColorAdjust: "exact",
       }}
     >
+      {fontLinks.map((href) => (
+        <link key={href} rel="stylesheet" href={href} />
+      ))}
       <Hero
+        theme={theme}
         content={{
           candidate_name,
+          candidate_contact: content.candidate_contact,
+          candidate_email: content.candidate_email,
           headline: content.headline,
           target_company,
           brand_style,
         }}
-        brand={brand}
       />
 
-      <WhyImAFit
-        items={content.why_im_a_fit}
-        brandPrimary={brand_style.primary}
-        brandInk={brand.ink}
-      />
+      <WhyImAFit theme={theme} items={content.why_im_a_fit} />
 
       {content.pitch_section && (
         <PitchSection
+          theme={theme}
           pitch={content.pitch_section}
           companyName={target_company.name}
-          brandPrimary={brand_style.primary}
-          brandInk={brand.ink}
         />
       )}
 
-      <Work
-        entries={content.work}
-        brandPrimary={brand_style.primary}
-        brandInk={brand.ink}
-      />
+      <Work theme={theme} entries={content.work} />
 
-      <About text={content.about} />
+      <About theme={theme} text={content.about} />
 
       <footer
-        className="px-6 py-5 text-center"
-        style={{ backgroundColor: "#0A2540" }}
+        className="px-6 py-6 text-center"
+        style={{ backgroundColor: theme.footerBg }}
       >
-        <p className="text-sm font-medium text-white">
+        <p
+          className="text-sm font-semibold"
+          style={{ color: theme.onFooter, fontFamily: theme.headingFamily }}
+        >
           {candidate_name}
         </p>
-        <p className="mt-1 text-xs text-slate-400">
+        <p className="mt-1 text-xs" style={{ color: theme.onFooterMuted }}>
           {target_company.domain}
         </p>
       </footer>

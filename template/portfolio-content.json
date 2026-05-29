@@ -90,7 +90,8 @@
     "background": "#FFFFFF",
     "headline_font": "Inter",
     "body_font": "Inter",
-    "mood": "minimal"
+    "mood": "minimal",
+    "source": "brandfetch"
   },
   "target_company": {
     "name": "Stripe",

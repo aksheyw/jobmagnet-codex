@@ -225,6 +225,10 @@ function buildPortfolioContent(inputs: CodeInputs) {
       headline_font: inputs.brand_style.headline_font,
       body_font: inputs.brand_style.body_font,
       mood: inputs.brand_style.mood,
+      // Carry `source` into the zip so the template's inferMood honors a
+      // deliberate BrandAgent mood exactly as the live preview does — without
+      // it the download silently re-infers from colors and diverges (gate M1).
+      source: inputs.brand_style.source,
     },
     target_company: inputs.target_company,
   };

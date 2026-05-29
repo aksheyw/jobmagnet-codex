@@ -5,8 +5,14 @@
  * symbol names.
  *
  * If a font is not in this map, CodeAgent falls back to `Inter` to keep
- * the template buildable. The allowlist is intentionally short for MVP;
- * Day 4 polish can extend coverage.
+ * the template buildable.
+ *
+ * SYNC: the byte-identical RENDER twins are this file
+ * (`jobmagnet-codex/template/lib/font-map.ts`) and `jobmagnet-app/lib/font-map.ts`
+ * — both export `googleFontLinks` (the app preview and the downloaded zip load
+ * brand fonts identically). Keep those two in sync. `jobmagnet-codex/lib/font-map.ts`
+ * is the PIPELINE copy used by CodeAgent (`resolveFont` only — no `googleFontLinks`);
+ * it shares the allowlist but intentionally omits the render helper.
  */
 const FONT_MAP: Record<string, string> = {
   inter: "Inter",
@@ -68,4 +74,33 @@ export function resolveFont(requested: string | undefined | null): ResolvedFont 
 export function isAllowedFont(requested: string): boolean {
   const key = requested.trim().toLowerCase().replace(/\s+/g, " ");
   return key in FONT_MAP;
+}
+
+/**
+ * Build Google Fonts `<link>` hrefs for the allowlisted fonts among `requested`,
+ * so a portfolio actually LOADS its brand typeface at render time (the live
+ * preview and the static zip both render the named family instead of falling
+ * back to a system font). Canonical casing comes from the allowlist symbol
+ * (e.g. "Hanken_Grotesk" → "Hanken Grotesk"); non-allowlisted/proprietary faces
+ * (no Google entry) are skipped and degrade to the fontStack's generic fallback.
+ * `:wght@400;700` covers body + heading weights; single-weight faces that reject
+ * 700 simply fail their own link and fall back — no other family is affected.
+ */
+export function googleFontLinks(
+  requested: ReadonlyArray<string | undefined | null>,
+): string[] {
+  const seen = new Set<string>();
+  const links: string[] = [];
+  for (const name of requested) {
+    const key = (name ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+    const symbol = key ? FONT_MAP[key] : undefined;
+    if (!symbol) continue;
+    const family = symbol.replace(/_/g, " ");
+    if (seen.has(family)) continue;
+    seen.add(family);
+    links.push(
+      `https://fonts.googleapis.com/css2?family=${family.replace(/ /g, "+")}:wght@400;700&display=swap`,
+    );
+  }
+  return links;
 }
