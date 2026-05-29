@@ -4,7 +4,12 @@ import { ensureWorkspace } from "../lib/workspace.js";
 import { logUsage } from "../lib/usage-logger.js";
 import { getSupabaseAdmin } from "../lib/supabase-admin.js";
 import { fetchBrandfetch, BRAND_FALLBACK } from "../lib/brandfetch.js";
-import { runResearchAgent, type ResearchInputs } from "./research-agent.js";
+import {
+  runResearchAgent,
+  runResearchWithRetry,
+  ResearchUnresolvedError,
+  type ResearchInputs,
+} from "./research-agent.js";
 import { runBrandAgent } from "./brand-agent.js";
 import { runNarrativeAgent } from "./narrative-agent.js";
 import { runPitchAgent } from "./pitch-agent.js";
@@ -14,6 +19,12 @@ import type { Narrative } from "../schemas/narrative.js";
 import type { PitchSection } from "../schemas/pitch-section.js";
 
 type AgentName = "research" | "brand" | "narrative" | "code" | "pitch";
+
+// F-orchestrator-research-guard (S15): retry ResearchAgent up to this many times
+// when web_search flakes and returns an empty/unusable result. An empty
+// company_domain would otherwise cascade into Brand static-fallback + Pitch
+// hard-fail (a no-company portfolio). 2 = original attempt + 1 retry.
+const RESEARCH_MAX_ATTEMPTS = 2;
 
 export interface OrchestrateInputs {
   job_id: string;
@@ -94,9 +105,32 @@ export async function orchestrate(
     const researchInputs: ResearchInputs = inputs.jd_url
       ? { jd_url: inputs.jd_url }
       : { jd_paste_text: inputs.jd_paste_text };
+    const hadJdUrl = Boolean(inputs.jd_url);
 
     const researchT0 = Date.now();
-    const research = await runResearchAgent(codex, researchInputs, workdir);
+    // F-orchestrator-research-guard (S15): guard + retry. web_search occasionally
+    // returns empty; without this an empty company_domain cascaded into a broken
+    // portfolio (Brand static-fallback + Pitch hard-fail). A retry reliably
+    // recovers; if the employer still can't be resolved, fail the job cleanly via
+    // ResearchUnresolvedError (its message surfaces on the progress page).
+    let research!: Awaited<ReturnType<typeof runResearchAgent>>;
+    try {
+      research = await runResearchWithRetry(
+        () => runResearchAgent(codex, researchInputs, workdir),
+        hadJdUrl,
+        RESEARCH_MAX_ATTEMPTS,
+      );
+    } catch (err) {
+      if (err instanceof ResearchUnresolvedError) {
+        // Keep the internal `detail` in server logs only; agent_states flows to
+        // the client via /api/jobs, so surface the hardened user-facing message
+        // there (not detail). Other error types fall through to the outer catch,
+        // which marks research failed with a generic, leak-safe reason.
+        log.warn({ job_id: inputs.job_id, detail: err.detail }, "research unresolved after retries");
+        await markState("research", "failed", { reason: err.message });
+      }
+      throw err;
+    }
     await logUsage({
       jobId: inputs.job_id,
       agent: "research",

@@ -122,6 +122,105 @@ export async function runResearchAgent(
   return { result: validated, usage, durationMs, webSearchQueries };
 }
 
+export interface ResearchAssessment {
+  usable: boolean;
+  reason?: string;
+}
+
+// IDENTICAL to the regex BrandAgent (brand-agent.ts:25) and PitchAgent
+// (pitch-agent.ts:31) validate against before they throw. assessResearchResult
+// reuses the same shape so the guard rejects exactly what would throw downstream
+// — a non-empty but invalid domain ("unknown", "n/a") must trigger a retry, not
+// slip through to a silent slate fallback. (F-orchestrator-research-guard, S15)
+const COMPANY_DOMAIN_REGEX = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i;
+
+/**
+ * Decide whether a ResearchAgent result is good enough to feed the rest of the
+ * pipeline. Mirrors + strengthens the /run-agent guard (run-agent.ts:151): a
+ * jd_url run that did zero web_search, an empty OR malformed company_domain
+ * (which throws in BrandAgent/PitchAgent DOMAIN_REGEX → silent cascade to a
+ * no-company portfolio), or an empty company_name are all unusable and must
+ * trigger a retry. `degraded` alone is intentionally NOT fatal: the agent
+ * over-sets it (F31) and a degraded-but-domain-valid result still themes +
+ * pitches fine. (F-orchestrator-research-guard, S15)
+ */
+export function assessResearchResult(
+  result: { company_domain: string; company_name: string },
+  webSearchQueries: string[],
+  hadJdUrl: boolean,
+): ResearchAssessment {
+  if (hadJdUrl && webSearchQueries.length === 0) {
+    return { usable: false, reason: "no web_search performed for the JD URL" };
+  }
+  const domain = result.company_domain.trim();
+  if (!domain) {
+    return { usable: false, reason: "empty company_domain" };
+  }
+  // An IP literal passes COMPANY_DOMAIN_REGEX (digits + dots) but is never a real
+  // employer domain; reject it so it doesn't reach BrandAgent's https://<domain>
+  // fetch (the jd_url is SSRF-checked at the route, but this LLM-authored value is not).
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(domain)) {
+    return { usable: false, reason: `company_domain is an IP address "${domain}"` };
+  }
+  if (!COMPANY_DOMAIN_REGEX.test(domain)) {
+    return { usable: false, reason: `invalid company_domain "${domain}"` };
+  }
+  if (!result.company_name.trim()) {
+    return { usable: false, reason: "empty company_name" };
+  }
+  return { usable: true };
+}
+
+/**
+ * Thrown when ResearchAgent cannot produce a usable result after all retries.
+ * The message is user-facing — it surfaces on the progress page via
+ * generation_jobs.error — so we fail clean instead of shipping a no-company
+ * portfolio. `detail` carries the internal reason for logs.
+ */
+export class ResearchUnresolvedError extends Error {
+  readonly detail: string;
+  constructor(detail: string) {
+    super(
+      "We couldn't identify the employer from this job posting. Please retry, or paste the job description text instead.",
+    );
+    this.name = "ResearchUnresolvedError";
+    this.detail = detail;
+  }
+}
+
+/**
+ * Run ResearchAgent up to `maxAttempts` times, returning the first USABLE
+ * result (per assessResearchResult). web_search is occasionally flaky — an
+ * attempt can return an empty/invalid result OR throw (Codex empty-response /
+ * parse / transient network); BOTH are retried (verified: standalone resolves
+ * 5/5). If every attempt is unusable or throws, raise ResearchUnresolvedError
+ * so the orchestrator fails the job cleanly with a user-facing message rather
+ * than cascading an empty company_domain into Brand/Pitch.
+ * (F-orchestrator-research-guard, S15)
+ */
+export async function runResearchWithRetry(
+  runOnce: () => Promise<ResearchResult>,
+  hadJdUrl: boolean,
+  maxAttempts = 2,
+): Promise<ResearchResult> {
+  let lastReason = "unknown";
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const r = await runOnce();
+      const assessment = assessResearchResult(r.result, r.webSearchQueries, hadJdUrl);
+      if (assessment.usable) return r;
+      lastReason = assessment.reason ?? "unusable";
+    } catch (err) {
+      // A thrown attempt (Codex empty-response / JSON parse / transient network)
+      // is also retryable. Record it and try again; after exhaustion throw a
+      // clean ResearchUnresolvedError rather than leak the raw internal message
+      // — it surfaces to the user via generation_jobs.error on the progress page.
+      lastReason = err instanceof Error ? err.message : String(err);
+    }
+  }
+  throw new ResearchUnresolvedError(lastReason);
+}
+
 function buildPrompt(inputs: ResearchInputs): string {
   if (inputs.jd_url) {
     return `You are ResearchAgent, an agent that extracts structured job context from a job posting page.
