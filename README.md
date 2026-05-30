@@ -24,7 +24,7 @@ This is the companion runtime to **[jobmagnet-app](https://github.com/aksheyw/jo
 | **Brand** | The company's real colors + fonts (Brandfetch → Codex fallback) | `web_search`, `outputSchema` |
 | **Narrative** | Tailored headline, "why I'm a fit", cover letter | `outputSchema` |
 | **Pitch** | A PM-RFC product critique + an SVG wireframe (4 stances) | `web_search`, **`workspace-write` sandbox**, `outputSchema` |
-| **Code** | Copies a Next.js template, rewrites Tailwind/fonts/content, builds + zips | deterministic (0 LLM tokens) |
+| **Code** | Copies a Next.js template, rewrites Tailwind/fonts/content, assembles + zips | deterministic (0 LLM tokens) |
 
 Every agent call logs input/output/cached/reasoning tokens + duration to Supabase `codex_usage`. For the MVP, generation runs via the Codex CLI's **ChatGPT Plus OAuth** (no per-token API cost during the hackathon); production would use an OpenAI API key.
 
@@ -32,7 +32,7 @@ Every agent call logs input/output/cached/reasoning tokens + duration to Supabas
 
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
-| `GET` | `/health` | none | codex CLI version, OAuth status, workspace free MB |
+| `GET` | `/health` | none | liveness probe (`ok` / `service` / `timestamp`) |
 | `POST` | `/orchestrate` | bearer | run the full 5-agent pipeline for a job (6/min) |
 | `POST` | `/run-agent` | bearer | run a single named agent — dev/debug (10/min) |
 | `GET` | `/download/:jobId` | HMAC-signed | stream the generated site zip (30/min) |
