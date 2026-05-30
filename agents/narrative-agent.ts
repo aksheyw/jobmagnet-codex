@@ -111,16 +111,21 @@ TARGET ROLE:
 
 TASK: Produce a Narrative JSON object that maps the candidate's real experience to this exact role. Hard rules:
 
+0. **STANCE (applies to headline, about, and cover_letter)** — Write as an OUTSIDER applying TO ${inputs.target_company.name}, never as someone who already works there. The candidate is a job applicant: frame their interest as wanting to CONTRIBUTE to the company's work, not as owning the company's mission. NEVER state ${inputs.target_company.name}'s mission, goals, or OKRs as the candidate's own in the first person.
+   - BAD (reads like a current employee): "interested in making ${inputs.target_company.name} a daily habit for millions of users".
+   - GOOD (reads like an applicant): "interested in bringing my <real strength> to <the role's work> at ${inputs.target_company.name}", or "drawn to ${inputs.target_company.name}'s mission of <X>, and would <contribution>".
+   Keep the confidence of the impact they'd drive — just make it unambiguous they are applying, not already employed.
+
 1. **candidate_name** — Use profile.name if present and non-empty. Otherwise EXTRACT from profile.raw_text by scanning for: (a) "I am [Name]" or "I'm [Name]" phrasing, (b) "Hi, I'm [Name]" / "My name is [Name]", (c) the first proper-noun pair (e.g., "Akshey Walia") that appears at the start of the text or after a heading like "About", (d) signature lines like "— Name" or "Sincerely, Name". Use the extracted name even if you have low confidence in it — anything found in the profile is better than the literal string "Candidate". Only fall back to "Candidate" if profile.raw_text contains NO recognizable proper-noun name at all.
 2. **candidate_contact** — Use profile.contact verbatim if present and non-empty (it's a LinkedIn URL or email the user supplied directly). Otherwise EXTRACT from profile.raw_text by scanning for: (a) a LinkedIn URL like "linkedin.com/in/<slug>", (b) an email address like "name@domain.tld". Use the first valid match. If neither is found, return an empty string "".
 
    **candidate_email** — Separately, use profile.email verbatim if present and non-empty (this is the user's email, supplied via the wizard email field). Otherwise leave empty string "". Do NOT extract from raw_text for this field — it must be the explicit, supplied email so the Hero CTA reaches the right inbox.
-3. **headline** — ONE sentence. Must reference ${inputs.target_company.name} by name. Tone: confident, not bro-y. Format like "Engineering leader who shipped 6 products to 100K+ users — interested in <specific JD theme> at ${inputs.target_company.name}".
+3. **headline** — ONE sentence. Must reference ${inputs.target_company.name} by name. Tone: confident, not bro-y. Apply STANCE (rule 0): the clause after "interested in" must name the ROLE'S work or what the candidate would CONTRIBUTE — NOT a restatement of ${inputs.target_company.name}'s mission. Format like "Engineering leader who shipped 6 products to 100K+ users — interested in <what the ROLE owns> at ${inputs.target_company.name}".
 4. **why_im_a_fit** — EXACTLY 3 bullets. Each has:
    - bullet: 1-2 sentences mapping a real candidate accomplishment to a specific responsibility/must-have from the JD.
    - metric: a SHORT label/number (e.g., "₹2Cr+ TPV", "100K+ users", "6 products", "+24% rev", "p50 < 80ms"). Use real numbers from the profile. NEVER fabricate metrics. If no concrete number available, use a short descriptor like "Multi-product builder" or "Platform owner".
-5. **about** — ~80 words in the candidate's voice. Mention ${inputs.target_company.name} once. No buzzwords without proof.
-6. **cover_letter** — ~250 words. The FIRST SENTENCE must mention ${inputs.target_company.name} and a specific reason to want this role. Body: 2-3 paragraphs mapping experience to JD. Close with: "I'd love to dig in deeper — happy to set up a call." Sign with the candidate's first name only.
+5. **about** — ~80 words in the candidate's voice. Mention ${inputs.target_company.name} once. Apply STANCE (rule 0) — an applicant introducing themselves and why they want IN, not an employee describing their current job. No buzzwords without proof.
+6. **cover_letter** — ~250 words. The FIRST SENTENCE must mention ${inputs.target_company.name} and a specific reason to want this role (as an applicant — why they want IN, not what they already do there). Apply STANCE (rule 0). Body: 2-3 paragraphs mapping experience to JD. Close with: "I'd love to dig in deeper — happy to set up a call." Sign with the candidate's first name only.
 7. **resume_bullets** — reorder + rewrite candidate's work_history per JD relevance. Top role = most relevant to JD. Each role has 3-5 bullets, each bullet ≤ 25 words, leading with a verb + specific number wherever the profile supports it. If the profile bullets are vague, tighten them but DON'T invent numbers.
 
 CONSTRAINTS:
