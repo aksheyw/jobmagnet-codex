@@ -2,7 +2,7 @@
 
 # jobmagnet-codex
 
-**The Codex SDK "engine room" for [JobMagnet](https://github.com/aksheyw/jobmagnet-app) — five specialized OpenAI Codex agents on a VPS that turn a profile + a job link into a deployable, on-brand portfolio site in ~96 seconds.**
+**The Codex SDK "engine room" for [JobMagnet](https://github.com/aksheyw/jobmagnet-app): five specialized OpenAI Codex agents on a VPS that turn a profile + a job link into a deployable, on-brand portfolio site in ~96 seconds.**
 
 [![Product UI](https://img.shields.io/badge/Product_UI-jobmagnet--app-4F46E5?style=for-the-badge)](https://github.com/aksheyw/jobmagnet-app)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
@@ -14,7 +14,7 @@
 
 ## Why this is a separate service
 
-This is the companion runtime to **[jobmagnet-app](https://github.com/aksheyw/jobmagnet-app)** (the Next.js UI + API on Vercel). It's separate **by force, not preference**: the Codex CLI is a **185 MB binary** — larger than Vercel's **50 MB** function limit — and the Code agent needs a persistent shell, a writable workspace, and ~96s of runtime. So the agent runtime can't live in a serverless function. It runs here: a **Fastify** server in a Docker container on a **Hostinger VPS**, reachable from Vercel over a **Cloudflare Tunnel** at `https://jobmagnet-codex.aksheywalia.in`.
+This is the companion runtime to **[jobmagnet-app](https://github.com/aksheyw/jobmagnet-app)** (the Next.js UI + API on Vercel). It's separate **by force, not preference**, because the Codex CLI is a **185 MB binary** (larger than Vercel's **50 MB** function limit), and the Code agent needs a persistent shell, a writable workspace, and ~96s of runtime. So the agent runtime can't live in a serverless function. It runs here: a **Fastify** server in a Docker container on a **Hostinger VPS**, reachable from Vercel over a **Cloudflare Tunnel** at `https://jobmagnet-codex.aksheywalia.in`.
 
 ## The 5 Codex agents
 
@@ -34,7 +34,7 @@ Every agent call logs input/output/cached/reasoning tokens + duration to Supabas
 |---|---|---|---|
 | `GET` | `/health` | none | liveness probe (`ok` / `service` / `timestamp`) |
 | `POST` | `/orchestrate` | bearer | run the full 5-agent pipeline for a job (6/min) |
-| `POST` | `/run-agent` | bearer | run a single named agent — dev/debug (10/min) |
+| `POST` | `/run-agent` | bearer | run a single named agent for dev/debug (10/min) |
 | `GET` | `/download/:jobId` | HMAC-signed | stream the generated site zip (30/min) |
 
 Bearer tokens are compared in constant time (`timingSafeEqual`). Per-route rate limits via `@fastify/rate-limit`.
@@ -70,7 +70,7 @@ flowchart LR
 
 - Bearer auth on all non-health routes (constant-time comparison).
 - Per-route rate limits.
-- **SSRF guard** (`lib/url-validator.ts`) on every user-supplied URL — blocks non-http(s) schemes, localhost, internal/link-local IPs.
+- **SSRF guard** (`lib/url-validator.ts`) on every user-supplied URL: blocks non-http(s) schemes, localhost, internal/link-local IPs.
 - Downloads are **HMAC-signed** with an expiry.
 - Runs in an isolated Docker container; OAuth tokens + the bearer secret are read-only bind mounts, never baked into the image.
 
@@ -85,13 +85,13 @@ docker compose logs -f --tail=50
 ```
 
 **Bind mounts:**
-- `/root/.codex` (ro) — ChatGPT Plus OAuth tokens, shared with the host Codex CLI.
-- `/root/.jobmagnet/secret` (ro) — the bearer secret shared with the Vercel app.
-- `/var/jobmagnet/jobs` (rw) — per-job workspaces + generated zips.
+- `/root/.codex` (ro): ChatGPT Plus OAuth tokens, shared with the host Codex CLI.
+- `/root/.jobmagnet/secret` (ro): the bearer secret shared with the Vercel app.
+- `/var/jobmagnet/jobs` (rw): per-job workspaces + generated zips.
 
 ## License
 
-[MIT](LICENSE) — © 2026 Akshey Walia
+[MIT](LICENSE). © 2026 Akshey Walia
 
 ---
 
