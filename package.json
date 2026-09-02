@@ -17,7 +17,7 @@
     "@openai/codex-sdk": "^0.133.0",
     "@supabase/supabase-js": "^2.45.0",
     "archiver": "^7.0.1",
-    "fastify": "^5.0.0",
+    "fastify": "^5.12.1",
     "zod": "^3.23.0"
   },
   "devDependencies": {
